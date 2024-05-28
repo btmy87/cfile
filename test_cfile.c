@@ -7,6 +7,10 @@
 #include "cfile.h"
 
 const char filename[] = "./test/test.tif";
+const char filenamegz[] = "./test/test.tif.gz";
+const char filenamebz[] = "./test/test.tif.bz";
+const char filenamexz[] = "./test/test.tif.xz";
+const char filenamezstd[] = "./test/test.tif.zstd";
 
 int main(void) {
   // read in the raw file using standard read calls
@@ -36,6 +40,11 @@ int main(void) {
     return 3;
   }
 
+  // get a crc32 checksum
+  uint32_t crc1 = crc32(0L, Z_NULL, 0);
+  crc1 = crc32(crc1, (Bytef*) buf1, (uInt) filesize);
+  printf_s("CRC32: %32s: %X\n", "Raw file with native calls", crc1);
+
   // now read the raw file with cfile
   cfid_s* cfid = calloc(1, sizeof(cfid_s));
   if (cfopen_s(cfid, filename, "rb") != 0) {
@@ -49,11 +58,39 @@ int main(void) {
     printf_s("Error reading raw file with cfread_s\n");
     return 5;
   }
+  (*(cfid->cfclose))(cfid);
+  uint32_t crc2 = crc32(0L, Z_NULL, 0);
+  crc2 = crc32(crc2, (Bytef*) buf2, (uInt) filesize);
+  printf_s("CRC32: %32s: %X\n", "Raw file with cfile", crc2);
 
   // verify files are equal
   if (memcmp(buf1, buf2, filesize) != 0) {
     printf("Error: native raw file doesn't match raw file with cfile\n");
   }
+
+  // read the gz file
+  cfid_s* cfid2 = calloc(1, sizeof(cfid_s));
+  //cfid = memset(cfid, 0, sizeof(cfid));
+  if (cfopen_s(cfid2, filenamegz, "rb") != 0) {
+    printf_s("Error opening gz file with cfopen_s\n");
+    return 4;
+  }
+  n2 = (*(cfid2->cfread_s))(buf2, filesize, 1, filesize, cfid2);
+  if (n2 != filesize) {
+    printf_s("Error reading gz file with cfread_s\n");
+    return 5;
+  }
+  (*(cfid2->cfclose))(cfid);
+  crc2 = crc32(0L, Z_NULL, 0);
+  crc2 = crc32(crc2, (Bytef*) buf2, (uInt) filesize);
+  printf_s("CRC32: %32s: %X\n", "GZ file with cfile", crc2);
+
+  // verify files are equal
+  if (memcmp(buf1, buf2, filesize) != 0) {
+    printf("Error: native raw file doesn't match gz file with cfile\n");
+    return 6;
+  }
+  (*(cfid->cfclose))(cfid);
 
 
   free(buf1);

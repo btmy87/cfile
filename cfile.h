@@ -30,7 +30,7 @@ struct cfid_s {
   FILE* fid; // real file pointer
   size_t (*cfread_s)(void*, size_t, size_t, size_t, cfid_s*); // pointer to read function
   int (*cfclose)(cfid_s*); // pointer to close function
-  gzFile *fid_gz;
+  gzFile fid_gz;
   BZFILE *fid_bz;
   lzma_stream *fid_xz;
   ZSTD_DCtx *fid_zstd;
