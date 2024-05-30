@@ -48,13 +48,21 @@ errno_t CFILE_API cfopen_s(cfid_s* cfid, const char* filename, const char* mode)
     cfid->cfclose = &_cfclose_none;
     DEBUG_PRINT("Reading uncompressed file with cfile.\n");
   } else if (cfid->comp == COMP_GZ) {
-    // TODO: gzip
+    // TODO: Couldn't get gzdopen to work, not sure why
     //int fd = _fileno(cfid->fid);
-    //cfid->fid_gz = gzdopen(fd, "rb");
+    //int fd2 = _dup(fd);
+    //fclose(cfid->fid);
+    //cfid->fid_gz = gzdopen(fd2, "rb");
     fclose(cfid->fid);
     cfid->fid_gz = gzopen(filename, "rb");
-    if (cfid->fid_gz == NULL) return EIO;
-    if (gzbuffer(cfid->fid_gz, CFILE_GZ_BUFFER_SIZE) != 0) return ENOMEM;
+    if (cfid->fid_gz == NULL) {
+      DEBUG_PRINT("Error opening gz file\n");
+      return EIO;
+    }
+    if (gzbuffer(cfid->fid_gz, CFILE_GZ_BUFFER_SIZE) != 0) {
+      DEBUG_PRINT("Error calling gzbuffer.\n");
+      return ENOMEM;
+    }
     cfid->cfread_s = &_cfread_gz;
     cfid->cfclose = &_cfclose_gz;
     DEBUG_PRINT("Reading GZ file with cfile.\n");
@@ -87,10 +95,10 @@ size_t CFILE_API _cfread_gz  (void* buf, size_t bufSize, size_t elemSize, size_t
   // note that gzread won't handle single reads outside of an integer length
   char* buf1 = buf; // need a complete type to do pointer math below
   size_t nread = elemSize*elemCount;
-  size_t nPass = nread / UINT32_MAX + 1;
+  size_t nPass = nread / INT32_MAX + 1;
   size_t nreadOut = 0;
   for (size_t i = 0; i < nPass; i++) {
-    uint32_t nReadThisPass = __min((uint32_t) (nread-i*UINT32_MAX), UINT32_MAX);
+    uint32_t nReadThisPass = __min((uint32_t) (nread-i*INT32_MAX), INT32_MAX);
     nreadOut += gzread(cfid->fid_gz, buf1, nReadThisPass);
     buf1 += nReadThisPass;
   }
@@ -99,8 +107,15 @@ size_t CFILE_API _cfread_gz  (void* buf, size_t bufSize, size_t elemSize, size_t
 }
 
 int CFILE_API _cfclose_gz  (cfid_s* cfid) 
-{
-  return gzclose_r(cfid->fid_gz);
+{  
+  int status1 = gzclose(cfid->fid_gz);
+  if (status1 != Z_OK) {
+    printf("Error in gzclose: %d\n", status1);
+    //printf(gzerror(cfid->fid_gz, status1));
+  }
+  //int status2 = fclose(cfid->fid);
+  //if (status2 != 0) printf("Error using fclose in _cfclose_gz\n");
+  return status1;
 }
 
 

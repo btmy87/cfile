@@ -69,18 +69,17 @@ int main(void) {
   }
 
   // read the gz file
-  cfid_s* cfid2 = calloc(1, sizeof(cfid_s));
-  //cfid = memset(cfid, 0, sizeof(cfid));
-  if (cfopen_s(cfid2, filenamegz, "rb") != 0) {
+  cfid = memset(cfid, 0, sizeof(cfid));
+  if (cfopen_s(cfid, filenamegz, "rb") != 0) {
     printf_s("Error opening gz file with cfopen_s\n");
     return 4;
   }
-  n2 = (*(cfid2->cfread_s))(buf2, filesize, 1, filesize, cfid2);
+  n2 = (*(cfid->cfread_s))(buf2, filesize, 1, filesize, cfid);
   if (n2 != filesize) {
     printf_s("Error reading gz file with cfread_s\n");
     return 5;
   }
-  (*(cfid2->cfclose))(cfid);
+  (*(cfid->cfclose))(cfid);
   crc2 = crc32(0L, Z_NULL, 0);
   crc2 = crc32(crc2, (Bytef*) buf2, (uInt) filesize);
   printf_s("CRC32: %32s: %X\n", "GZ file with cfile", crc2);
@@ -90,7 +89,6 @@ int main(void) {
     printf("Error: native raw file doesn't match gz file with cfile\n");
     return 6;
   }
-  (*(cfid->cfclose))(cfid);
 
 
   free(buf1);
