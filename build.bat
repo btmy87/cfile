@@ -19,11 +19,13 @@ if %DEBUG%==1 (
   echo Building in debug mode
   set CLOPTS=%CLOPTS% /Zi /Od /MDd
   set LINKOPTS=%LINKOPTS% /DEBUG
-  set LINKLIBS=zlibd.lib bz2.lib liblzma.lib zstd.lib
+  set LINKLIBS=zlibstaticd.lib 
+  set LINKLIBS=%LINKLIBS% "C:\Users\Brian\Documents\programming\bzip2\build_debug\bz2_static.lib"
+  set LINKLIBS=%LINKLIBS% liblzma.lib zstd.lib
 ) else (
   echo Building in release mode
   set CLOPTS=%CLOPTS% /O2 /MD
-  set LINKLIBS=zlib.lib bz2.lib liblzma.lib zstd.lib
+  set LINKLIBS=zlibstatic.lib bz2_static.lib liblzma.lib zstd.lib
 )
 
 :: build

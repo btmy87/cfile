@@ -8,7 +8,7 @@
 
 const char filename[] = "./test/test.tif";
 const char filenamegz[] = "./test/test.tif.gz";
-const char filenamebz[] = "./test/test.tif.bz";
+const char filenamebz[] = "./test/test.tif.bz2";
 const char filenamexz[] = "./test/test.tif.xz";
 const char filenamezstd[] = "./test/test.tif.zstd";
 
@@ -87,6 +87,27 @@ int main(void) {
   // verify files are equal
   if (memcmp(buf1, buf2, filesize) != 0) {
     printf("Error: native raw file doesn't match gz file with cfile\n");
+    return 6;
+  }
+  // read the bz file
+  cfid = memset(cfid, 0, sizeof(cfid));
+  if (cfopen_s(cfid, filenamebz, "rb") != 0) {
+    printf_s("Error opening bz file with cfopen_s\n");
+    return 4;
+  }
+  n2 = (*(cfid->cfread_s))(buf2, filesize, 1, filesize, cfid);
+  if (n2 != filesize) {
+    printf_s("Error reading bz file with cfread_s\n");
+    return 5;
+  }
+  (*(cfid->cfclose))(cfid);
+  crc2 = crc32(0L, Z_NULL, 0);
+  crc2 = crc32(crc2, (Bytef*) buf2, (uInt) filesize);
+  printf_s("CRC32: %32s: %X\n", "BZ file with cfile", crc2);
+
+  // verify files are equal
+  if (memcmp(buf1, buf2, filesize) != 0) {
+    printf("Error: native raw file doesn't match bz file with cfile\n");
     return 6;
   }
 
